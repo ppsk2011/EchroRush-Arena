@@ -1,0 +1,106 @@
+name: Build Mobile (Android APK / iOS)
+
+# Runs on every push to main and can be triggered manually from the
+# Actions tab ("Run workflow" button) to produce a downloadable APK.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  GODOT_VERSION: "4.2.2"
+
+# Restrict the default GITHUB_TOKEN to read-only access.
+permissions:
+  contents: read
+
+jobs:
+  # ─────────────────────────────────────────────
+  # Job 1 – Android debug APK
+  # Uses the barichello/godot-ci Docker image which bundles Godot,
+  # the Android SDK, and all export templates out of the box.
+  # ─────────────────────────────────────────────
+  android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:4.2.2
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Move export templates into place
+        run: |
+          TEMPLATE_DIR="$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+          mkdir -p "$HOME/.local/share/godot/export_templates"
+          # Move only when the container stored them under /root and the
+          # runner is operating as a different user.
+          if [ ! -d "$TEMPLATE_DIR" ]; then
+            mv "/root/.local/share/godot/export_templates/${GODOT_VERSION}.stable" \
+               "$TEMPLATE_DIR"
+          fi
+
+      - name: Export Android debug APK
+        run: |
+          mkdir -p build/android
+          godot --headless --export-debug "Android" \
+            "$GITHUB_WORKSPACE/build/android/EchoRushArena.apk"
+
+      # The APK is attached to the workflow run so anyone with repo access
+      # can download it from Actions → the run → Artifacts.
+      - name: Upload Android APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: EchoRushArena-Android-APK
+          path: build/android/EchoRushArena.apk
+          retention-days: 30
+
+  # ─────────────────────────────────────────────
+  # Job 2 – iOS Xcode project export
+  # Produces an Xcode project that can be opened locally to build /
+  # archive and distribute via TestFlight or Ad Hoc.
+  # Full IPA signing requires an Apple Developer account; set the
+  # secrets listed below to enable code-signed builds.
+  #
+  # Required secrets for signed IPA (optional – export still runs
+  # without them, producing an unsigned Xcode project):
+  #   APPLE_TEAM_ID          – 10-character Apple Team ID
+  # ─────────────────────────────────────────────
+  ios:
+    name: Build iOS (Xcode project)
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download Godot ${{ env.GODOT_VERSION }}
+        run: |
+          curl -fsSL -o godot.zip \
+            "https://github.com/godotengine/godot/releases/download/${{ env.GODOT_VERSION }}-stable/Godot_v${{ env.GODOT_VERSION }}-stable_macos.universal.zip"
+          unzip -q godot.zip
+          chmod +x "Godot_v${{ env.GODOT_VERSION }}-stable_macos.universal.app/Contents/MacOS/Godot"
+
+      - name: Download Godot export templates
+        run: |
+          curl -fsSL -o templates.tpz \
+            "https://github.com/godotengine/godot/releases/download/${{ env.GODOT_VERSION }}-stable/Godot_v${{ env.GODOT_VERSION }}-stable_export_templates.tpz"
+          TEMPLATE_DIR="$HOME/Library/Application Support/Godot/export_templates/${{ env.GODOT_VERSION }}.stable"
+          mkdir -p "$TEMPLATE_DIR"
+          unzip -q templates.tpz -d /tmp/godot_templates
+          mv /tmp/godot_templates/templates/* "$TEMPLATE_DIR/"
+
+      - name: Export iOS Xcode project
+        run: |
+          mkdir -p build/ios
+          "Godot_v${{ env.GODOT_VERSION }}-stable_macos.universal.app/Contents/MacOS/Godot" \
+            --headless --export-debug "iOS" \
+            "$GITHUB_WORKSPACE/build/ios/EchoRushArena"
+
+      - name: Upload iOS Xcode project artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: EchoRushArena-iOS-Xcode-Project
+          path: build/ios/
+          retention-days: 30

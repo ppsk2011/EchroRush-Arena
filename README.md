@@ -29,7 +29,26 @@ export_presets.cfg  Android + iOS export configuration
 project.godot   Godot 4 project configuration
 ```
 
-## Quick start
+## Download & play on Android
+
+Every push to `main` automatically builds a debug APK via GitHub Actions.
+
+1. Go to the **Actions** tab in this repository.
+2. Click the latest **"Build Mobile (Android APK / iOS)"** workflow run.
+3. Scroll to **Artifacts** at the bottom of the page.
+4. Download **EchoRushArena-Android-APK** and unzip it.
+5. Transfer `EchoRushArena.apk` to your Android device (or open it directly
+   if you're browsing from your phone).
+6. On the device, enable **Install from unknown sources** in Settings →
+   Security, then tap the APK to install.
+
+> **iOS** – the same workflow exports an Xcode project artifact
+> (`EchoRushArena-iOS-Xcode-Project`).  Open it in Xcode 15+, select your
+> development team, and run on a connected device or archive for TestFlight /
+> Ad Hoc distribution.  A paid Apple Developer account is required for
+> on-device installation.
+
+## Quick start (editor)
 
 1. Open the project folder in **Godot 4.2+**.
 2. Press **F5** (or the Play button) to run in the editor.
