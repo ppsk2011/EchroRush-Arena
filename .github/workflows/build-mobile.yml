@@ -30,7 +30,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Move export templates into place
+      - name: Move export templates and write editor settings
         run: |
           TEMPLATE_DIR="$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
           mkdir -p "$HOME/.local/share/godot/export_templates"
@@ -40,12 +40,28 @@ jobs:
             mv "/root/.local/share/godot/export_templates/${GODOT_VERSION}.stable" \
                "$TEMPLATE_DIR"
           fi
-          # Copy the pre-configured Godot editor settings (Android SDK path,
-          # Java SDK path, debug keystore) when HOME differs from /root.
-          if [ "$HOME" != "/root" ]; then
-            mkdir -p "$HOME/.config"
-            cp -r /root/.config/godot "$HOME/.config/godot"
+          # Determine the Java SDK path: prefer the JAVA_HOME env var that the
+          # barichello/godot-ci image exports, then fall back to resolving via
+          # the `java` binary.
+          JAVA_SDK_PATH="${JAVA_HOME:-}"
+          if [ -z "$JAVA_SDK_PATH" ] || [ ! -d "$JAVA_SDK_PATH" ]; then
+            JAVA_SDK_PATH=$(dirname "$(dirname "$(readlink -f "$(which java)")")")
           fi
+          # Write a fresh Godot 4 editor settings file that contains all of the
+          # paths required for a successful Android export.  The barichello
+          # image ships the Android SDK under /root/android-sdk and the debug
+          # keystore at /root/android-sdk/debug.keystore.
+          mkdir -p "$HOME/.config/godot"
+          cat > "$HOME/.config/godot/editor_settings-4.tres" << EOF
+[gd_resource type="EditorSettings" format=3]
+
+[resource]
+export/android/android_sdk_path = "/root/android-sdk"
+export/android/debug_keystore = "/root/android-sdk/debug.keystore"
+export/android/debug_keystore_user = "androiddebugkey"
+export/android/debug_keystore_pass = "android"
+export/android/java_sdk_path = "$JAVA_SDK_PATH"
+EOF
 
       - name: Export Android debug APK
         run: |
@@ -96,6 +112,19 @@ jobs:
           mkdir -p "$TEMPLATE_DIR"
           unzip -q templates.tpz -d /tmp/godot_templates
           mv /tmp/godot_templates/templates/* "$TEMPLATE_DIR/"
+
+      - name: Configure iOS Team ID
+        # Override the placeholder team ID (AAAAAAAAAA in export_presets.cfg)
+        # with the real one when the APPLE_TEAM_ID secret is set.  Without a
+        # real Team ID the Xcode project is still exported and can be opened
+        # locally, but it will require manual signing before deploying to a
+        # device.
+        env:
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          if [ -n "$TEAM_ID" ]; then
+            sed -i '' "s/application\/app_store_team_id=\"[^\"]*\"/application\/app_store_team_id=\"$TEAM_ID\"/" export_presets.cfg
+          fi
 
       - name: Export iOS Xcode project
         run: |
