@@ -40,6 +40,12 @@ jobs:
             mv "/root/.local/share/godot/export_templates/${GODOT_VERSION}.stable" \
                "$TEMPLATE_DIR"
           fi
+          # Copy the pre-configured Godot editor settings (Android SDK path,
+          # Java SDK path, debug keystore) when HOME differs from /root.
+          if [ "$HOME" != "/root" ]; then
+            mkdir -p "$HOME/.config"
+            cp -r /root/.config/godot "$HOME/.config/godot"
+          fi
 
       - name: Export Android debug APK
         run: |
@@ -80,7 +86,7 @@ jobs:
           curl -fsSL -o godot.zip \
             "https://github.com/godotengine/godot/releases/download/${{ env.GODOT_VERSION }}-stable/Godot_v${{ env.GODOT_VERSION }}-stable_macos.universal.zip"
           unzip -q godot.zip
-          chmod +x "Godot_v${{ env.GODOT_VERSION }}-stable_macos.universal.app/Contents/MacOS/Godot"
+          chmod +x "Godot.app/Contents/MacOS/Godot"
 
       - name: Download Godot export templates
         run: |
@@ -94,7 +100,7 @@ jobs:
       - name: Export iOS Xcode project
         run: |
           mkdir -p build/ios
-          "Godot_v${{ env.GODOT_VERSION }}-stable_macos.universal.app/Contents/MacOS/Godot" \
+          "Godot.app/Contents/MacOS/Godot" \
             --headless --export-debug "iOS" \
             "$GITHUB_WORKSPACE/build/ios/EchoRushArena"
 
