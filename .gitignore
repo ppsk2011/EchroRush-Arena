@@ -1,0 +1,14 @@
+# Godot 4 build artifacts and editor cache
+.godot/
+*.import
+export_credentials.cfg
+
+# Android build
+android/
+
+# iOS build
+ios/
+
+# OS-specific
+.DS_Store
+Thumbs.db

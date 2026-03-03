@@ -1,0 +1,44 @@
+[gd_scene load_steps=12 format=3 uid="uid://echomain0001"]
+
+[ext_resource type="Script"      path="res://scripts/GameManager.gd"  id="1_manager"]
+[ext_resource type="Script"      path="res://scripts/Arena.gd"         id="2_arena"]
+[ext_resource type="Script"      path="res://scripts/GhostPool.gd"     id="3_pool"]
+[ext_resource type="Script"      path="res://scripts/OrbSpawner.gd"    id="4_orbs"]
+[ext_resource type="Script"      path="res://scripts/ScoreSystem.gd"   id="5_score"]
+[ext_resource type="Script"      path="res://scripts/AdManager.gd"     id="6_ads"]
+[ext_resource type="PackedScene" path="res://scenes/Player.tscn"       id="7_player"]
+[ext_resource type="PackedScene" path="res://scenes/Ghost.tscn"        id="8_ghost"]
+[ext_resource type="PackedScene" path="res://scenes/HUD.tscn"          id="9_hud"]
+[ext_resource type="PackedScene" path="res://scenes/SkinSelect.tscn"   id="10_skins"]
+[ext_resource type="PackedScene" path="res://scenes/Orb.tscn"          id="11_orb"]
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1_manager")
+skin_select_scene = ExtResource("10_skins")
+
+[node name="Arena" type="Node2D" parent="."]
+position = Vector2(540, 960)
+script = ExtResource("2_arena")
+
+[node name="Player" parent="." instance=ExtResource("7_player")]
+position = Vector2(540, 960)
+
+[node name="GhostPool" type="Node" parent="."]
+script = ExtResource("3_pool")
+ghost_scene = ExtResource("8_ghost")
+
+[node name="OrbSpawner" type="Node" parent="."]
+script = ExtResource("4_orbs")
+orb_scene = ExtResource("11_orb")
+
+[node name="ScoreSystem" type="Node" parent="."]
+script = ExtResource("5_score")
+
+[node name="RunTimer" type="Timer" parent="."]
+wait_time = 30.0
+one_shot = true
+
+[node name="HUD" parent="." instance=ExtResource("9_hud")]
+
+[node name="AdManager" type="Node" parent="."]
+script = ExtResource("6_ads")
