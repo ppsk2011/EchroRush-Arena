@@ -51,17 +51,20 @@ jobs:
           # paths required for a successful Android export.  The barichello
           # image ships the Android SDK under /root/android-sdk and the debug
           # keystore at /root/android-sdk/debug.keystore.
+          # NOTE: printf is used instead of a heredoc to avoid YAML literal-block
+          # parsing issues (heredoc content starting at column 0 would break the
+          # YAML block scalar).
           mkdir -p "$HOME/.config/godot"
-          cat > "$HOME/.config/godot/editor_settings-4.tres" << EOF
-[gd_resource type="EditorSettings" format=3]
-
-[resource]
-export/android/android_sdk_path = "/root/android-sdk"
-export/android/debug_keystore = "/root/android-sdk/debug.keystore"
-export/android/debug_keystore_user = "androiddebugkey"
-export/android/debug_keystore_pass = "android"
-export/android/java_sdk_path = "$JAVA_SDK_PATH"
-EOF
+          {
+            printf '[gd_resource type="EditorSettings" format=3]\n'
+            printf '\n'
+            printf '[resource]\n'
+            printf 'export/android/android_sdk_path = "/root/android-sdk"\n'
+            printf 'export/android/debug_keystore = "/root/android-sdk/debug.keystore"\n'
+            printf 'export/android/debug_keystore_user = "androiddebugkey"\n'
+            printf 'export/android/debug_keystore_pass = "android"\n'
+            printf 'export/android/java_sdk_path = "%s"\n' "$JAVA_SDK_PATH"
+          } > "$HOME/.config/godot/editor_settings-4.tres"
 
       - name: Export Android debug APK
         run: |
